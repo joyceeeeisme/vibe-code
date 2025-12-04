@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>核心價值觀探索器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <style>
         /* --- 基礎設定 --- */
         :root { 
@@ -12,7 +15,7 @@
             --tooltip-bg: rgba(44, 62, 80, 0.95); 
             --category-color: #8899a6;
             
-            /* Chart Colors (為了 CSS 餅圖定義顏色變數) */
+            /* Chart Colors */
             --chart-c1: #4a90e2; /* 內在與自我 */
             --chart-c2: #50e3c2; /* 關係與影響力 */
             --chart-c3: #f5a623; /* 道德與靈性 */
@@ -31,7 +34,7 @@
         .btn:hover { transform: translateY(-2px); background-color: #357abd; }
         .btn:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; box-shadow: none; }
         
-        /* --- Step 1 Card Styles (No Change) --- */
+        /* --- 步驟 1 & 2 Styles (無更動) --- */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .card { border: 2px solid #edf2f7; background: white; padding: 15px 10px; text-align: center; cursor: pointer; border-radius: 10px; transition: all 0.2s; position: relative; font-weight: 500; user-select: none; }
         .value-name { display: block; font-weight: bold; font-size: 1.05em; }
@@ -42,8 +45,6 @@
         .card .tooltip { visibility: hidden; width: 220px; background-color: var(--tooltip-bg); color: #fff; text-align: center; border-radius: 6px; padding: 10px; position: absolute; z-index: 10; bottom: 115%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s, transform 0.3s; font-size: 0.85rem; line-height: 1.4; pointer-events: none; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
         .card .tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: var(--tooltip-bg) transparent transparent transparent; }
         .card:hover .tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
-
-        /* --- Step 2 & 3 Styles (No Change) --- */
         .pk-box { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
         @media(min-width: 768px) { .pk-box { flex-direction: row; } }
         .pk-card { flex: 1; border: 2px solid #edf2f7; padding: 30px; border-radius: 12px; cursor: pointer; transition: all 0.3s; background: white; display: flex; flex-direction: column; justify-content: center; min-height: 300px; }
@@ -52,6 +53,8 @@
         .pk-card .pk-category { color: var(--category-color); font-size: 0.85em; margin-bottom: 15px;}
         .pk-card p { font-size: 1.1em; color: #555; min-height: 3em;}
         .scenario { background: #fff5f5; color: #c0392b; padding: 15px; border-radius: 8px; margin-top: 15px; font-style: italic; line-height: 1.5; }
+        
+        /* --- 步驟 3 Results & Analysis Styles (新增分享區塊) --- */
         .result-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; background: white; }
         .result-item:first-child { background: linear-gradient(to right, #fffdf0, white); border-left: 4px solid gold; }
         .rank { font-weight: bold; margin-right: 20px; color: #bdc3c7; font-size: 1.5em; width: 40px; text-align: center; }
@@ -60,76 +63,41 @@
         .result-item:nth-child(3) .rank { color: #cd7f32; }
         .result-details { flex-grow: 1; }
         .result-details .category-tag { font-size: 0.75em; color: var(--category-color); margin-left: 10px; border: 1px solid #eee; padding: 2px 6px; border-radius: 4px; }
+        
+        /* 統計分析區塊 */
+        .analysis-section { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 30px; margin: 40px 0; padding: 30px; border-radius: 12px; background: #fcfcfc; border: 1px solid #eee; }
+        .chart-container { width: 250px; height: 250px; flex-shrink: 0; margin-right: 20px; display: flex; align-items: center; justify-content: center; }
+        .pie-chart { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .summary-text { flex-grow: 1; min-width: 300px; max-width: 500px; display: flex; flex-direction: column; justify-content: center; }
+        .summary-text h3 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .summary-text p { font-size: 1.1em; line-height: 1.8; }
+        .legend { margin-top: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .legend-item { display: flex; align-items: center; font-size: 0.9em; }
+        .legend-color { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-        /* --- New: Analysis & Chart Styles --- */
-        .analysis-section { 
-            display: flex; 
-            flex-wrap: wrap;
-            justify-content: space-around; 
-            gap: 30px;
-            margin: 40px 0;
-            padding: 30px;
+        /* 新增：分享圖檔區域 */
+        .share-area { 
+            text-align: center; 
+            margin: 40px 0 20px; 
+            padding: 20px; 
+            background: #fff; 
             border-radius: 12px;
-            background: #fcfcfc;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .qrcode-container {
+            display: inline-block;
+            padding: 10px;
+            background: white;
             border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 15px;
         }
-
-        .chart-container {
-            width: 250px;
-            height: 250px;
-            flex-shrink: 0;
-            margin-right: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .pie-chart {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-
-        .summary-text {
-            flex-grow: 1;
-            min-width: 300px;
-            max-width: 500px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .summary-text h3 {
-            color: var(--primary);
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        .summary-text p {
-            font-size: 1.1em;
-            line-height: 1.8;
-        }
-
-        .legend {
-            margin-top: 20px;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            font-size: 0.9em;
-        }
-
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        
+        /* 圖像截取容器 - 確保背景為白色，圖檔輸出更清晰 */
+        #capture-target {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
         }
     </style>
 </head>
@@ -228,10 +196,14 @@
             "生活風格": { color: "var(--chart-c5)" },
             "使命與角色": { color: "var(--chart-c6)" }
         };
+        
+        // 外部分享連結 (請根據您實際發布的 URL 填寫)
+        const SHARE_URL = 'https://joyceeeeisme.github.io/vibe-code/values.html';
 
-        // 階段一、二的函數保持不變...
 
+        // 階段一、二的函數 (省略，保持不變)
         function renderStep1() {
+            // ... (函數內容不變)
             app.innerHTML = `
                 <h1>步驟 1/2: 初步篩選</h1>
                 <p class="subtitle">請從下方勾選出您覺得 **重要** 的價值觀（建議 10-20 個）。<br>💡 <b>提示：滑鼠移到卡片上，可以看到詳細解釋。</b></p>
@@ -321,14 +293,12 @@
             });
         }
         
-        // --- NEW: 統計分析與餅圖生成函數 ---
-
+        // --- 統計分析與餅圖生成函數 (無更動) ---
         function analyzeTopValues(list) {
             const analysis = {};
             const total = list.length;
             let highestCategory = { name: '', count: 0 };
             
-            // 1. 統計各類別數量
             list.forEach(v => {
                 const cat = v.category;
                 analysis[cat] = analysis[cat] || { count: 0, percentage: 0 };
@@ -339,20 +309,18 @@
                 }
             });
 
-            // 2. 計算百分比
             Object.keys(analysis).forEach(cat => {
                 analysis[cat].percentage = Math.round((analysis[cat].count / total) * 100);
             });
             
-            // 3. 排序以便繪圖 (將結果轉為陣列，方便處理漸層)
             const sortedAnalysis = Object.keys(analysis)
                 .map(cat => ({ category: cat, ...analysis[cat] }))
-                .sort((a, b) => b.percentage - a.percentage); // 依百分比高低排序
+                .sort((a, b) => b.percentage - a.percentage); 
 
             return { sortedAnalysis, total, highestCategory };
         }
 
-        function createPieChart(analysis) {
+        function createPieChartHTML(analysis) {
             let gradientString = [];
             let currentDegree = 0;
             let legendHTML = '';
@@ -361,10 +329,8 @@
                 const color = categoryMap[item.category].color;
                 const endDegree = currentDegree + item.percentage;
                 
-                // 建立 conic-gradient 片段: color start% end%
                 gradientString.push(`${color} ${currentDegree}% ${endDegree}%`);
 
-                // 建立圖例 HTML
                 legendHTML += `
                     <div class="legend-item">
                         <span class="legend-color" style="background-color: ${color};"></span>
@@ -375,9 +341,8 @@
                 currentDegree = endDegree;
             });
 
-            // 處理總結文字
             let summaryText = `您的核心價值觀前 ${analysis.total} 名主要集中在以下領域：`;
-            if (analysis.highestCategory.count > analysis.total * 0.3) { // 超過 30% 才強調
+            if (analysis.highestCategory.count > analysis.total * 0.3) { 
                 summaryText += `<br><br><b>🏆 趨勢總結：</b><br>您的價值觀高度集中在「${analysis.highestCategory.name}」類，該領域佔比高達 ${analysis.sortedAnalysis[0].percentage}%。這顯示您目前生命中最核心的驅動力就是圍繞著「${analysis.highestCategory.name}」相關的需求。`;
             } else {
                 summaryText += `<br><br>您的價值觀分佈較為平衡，但傾向於「${analysis.highestCategory.name}」等領域，顯示您在多方面都有所重視。`;
@@ -398,34 +363,84 @@
                 </div>
             `;
         }
+        
+        // --- NEW: 圖片生成與 QR Code 函數 ---
+        
+        window.generateQRCode = function() {
+             // 確保每次重新渲染前清空容器
+            document.getElementById('qrcode').innerHTML = '';
+            
+            // 創建 QR Code
+            new QRCode(document.getElementById("qrcode"), {
+                text: SHARE_URL,
+                width: 128,
+                height: 128,
+                colorDark : "#333333",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+        
+        window.downloadResultImage = function() {
+            const target = document.getElementById('capture-target');
+            
+            // 由於 html2canvas 必須等到 QR Code 渲染完成 (Canvas/SVG) 才能正確截取，
+            // 所以我們將截圖操作延後，確保網頁元素都已繪製。
+            // 此外，為了讓截圖的圖片清晰，我們會放大渲染比例。
+            html2canvas(target, {
+                scale: 2, // 放大兩倍渲染，圖片更清晰
+                allowTaint: true,
+                useCORS: true,
+            }).then(canvas => {
+                // 將 Canvas 轉換為圖片連結
+                const imageURL = canvas.toDataURL("image/png");
 
-        // --- NEW: 更新結果頁渲染函數 ---
+                // 創建一個臨時連結並觸發下載
+                const a = document.createElement('a');
+                a.href = imageURL;
+                a.download = '我的核心價值觀排序.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+        }
+
+        // --- 更新結果頁渲染函數 ---
         function renderResult(list) {
             window.scrollTo(0, 0);
             const topList = list.slice(0, 10);
             
             const analysis = analyzeTopValues(topList);
-            const chartHTML = createPieChart(analysis);
+            const chartHTML = createPieChartHTML(analysis);
 
             app.innerHTML = `
-                <h1>🎉 您的核心價值觀排行榜</h1>
-                <p class="subtitle">根據內心深處的選擇，這是對您最重要的排序結果。</p>
-                
-                ${chartHTML} <h3 style="color: #333; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;">價值觀詳細排名 (Top ${topList.length})</h3>
-                <div>
-                    ${topList.map((v, i) => `
-                        <div class="result-item">
-                            <span class="rank">#${i+1}</span>
-                            <div class="result-details">
-                                <strong style="font-size: 1.2em;">${v.name}</strong> 
-                                <span class="category-tag">${v.category}</span>
-                                <div style="font-size:0.95em; color:#666; margin-top: 5px;">${v.desc}</div>
+                <div id="capture-target"> <h1 style="margin-bottom: 5px;">🎉 您的核心價值觀排行榜</h1>
+                    <p class="subtitle" style="margin-bottom: 20px;">根據內心深處的選擇，這是對您最重要的排序結果。</p>
+                    
+                    ${chartHTML} <h3 style="color: #333; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;">價值觀詳細排名 (Top ${topList.length})</h3>
+                    <div>
+                        ${topList.map((v, i) => `
+                            <div class="result-item">
+                                <span class="rank">#${i+1}</span>
+                                <div class="result-details">
+                                    <strong style="font-size: 1.2em;">${v.name}</strong> 
+                                    <span class="category-tag">${v.category}</span>
+                                    <div style="font-size:0.95em; color:#666; margin-top: 5px;">${v.desc}</div>
+                                </div>
                             </div>
-                        </div>
-                    `).join('')}
-                </div>
-                <button class="btn" onclick="location.reload()">重新測試</button>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="share-area">
+                        <p style="font-size: 1.1em; color: #4a90e2; font-weight: bold; margin-bottom: 10px;">掃描分享給朋友測試</p>
+                        <div class="qrcode-container" id="qrcode"></div>
+                    </div>
+                </div> <button class="btn" onclick="downloadResultImage()">下載分享圖 (PNG)</button>
+                <button class="btn" style="background: #ccc; margin-top: 10px;" onclick="location.reload()">重新測試</button>
             `;
+            
+            // 在頁面渲染完成後，立即生成 QR Code
+            generateQRCode();
         }
 
         // 啟動程式

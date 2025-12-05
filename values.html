@@ -30,7 +30,7 @@
         p.subtitle { text-align: center; color: #666; margin-bottom: 30px; line-height: 1.6; }
         
         /* --- 按鈕樣式 --- */
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 50px; cursor: pointer; font-size: 16px; margin: 30px auto; display: block; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3); }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 50px; cursor: pointer; font-size: 16px; margin: 30px auto 10px; display: block; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3); }
         .btn:hover { transform: translateY(-2px); background-color: #357abd; }
         .btn:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; box-shadow: none; }
         
@@ -122,6 +122,65 @@
             padding: 20px;
             border-radius: 16px;
         }
+
+        /* --- Sharing Buttons Style --- */
+        .share-actions { 
+            display: flex; 
+            flex-wrap: wrap;
+            gap: 10px; 
+            justify-content: center; 
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        .share-btn {
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 15px;
+            min-width: 140px;
+            justify-content: center;
+        }
+        .share-btn svg {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            fill: white; /* 確保 SVG 圖標是白色 */
+        }
+        .line-btn { 
+            background: #00c300; 
+            color: white; 
+        }
+        .line-btn:hover { 
+            background: #00a000; 
+        }
+        .fb-btn { 
+            background: #1877f2; 
+            color: white; 
+        }
+        .fb-btn:hover { 
+            background: #1562d4; 
+        }
+        .ig-btn {
+            background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);
+            color: white;
+        }
+        .web-btn {
+            background: #f7f7f7;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        .web-btn:hover {
+            background: #eaeaea;
+        }
+        .web-btn svg {
+            fill: #333;
+        }
+        
     </style>
 </head>
 <body>
@@ -217,8 +276,9 @@
             "探索與生活方式": { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-c5').trim() }
         };
 
-        // 外部分享連結 (請根據您實際發布的 URL 填寫)
-        const SHARE_URL = 'https://your-domain.com/values.html'; // 請更新此 URL
+        // 外部分享連結 (使用當前頁面 URL 作為預設分享連結)
+        const SHARE_URL = window.location.href; 
+        const SHARE_TEXT = '我發現了我的核心價值觀！快來測測看你的 Top 10 是什麼？';
 
         // 階段一、二的函數 (修正 Step 1 的 Tooltip)
         function renderStep1() {
@@ -313,8 +373,50 @@
                 window.resolveChoice = (choice) => { state.resolveRef(choice); };
             });
         }
+
+        // --- 3. 社交分享函數 ---
+        window.shareToSocial = function(platform) {
+            const encodedUrl = encodeURIComponent(SHARE_URL);
+            const encodedText = encodeURIComponent(SHARE_TEXT);
+            let url = '';
+
+            switch (platform) {
+                case 'line':
+                    // Line 官方分享 URL
+                    url = `https://social-plugins.line.me/lineit/share?url=${encodedUrl}&text=${encodedText}`;
+                    break;
+                case 'facebook':
+                    // Facebook 分享 URL
+                    url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+                    break;
+                case 'web':
+                    // Web Share API (原生手機分享)
+                    if (navigator.share) {
+                        navigator.share({
+                            title: '核心價值觀探索器',
+                            text: SHARE_TEXT,
+                            url: SHARE_URL,
+                        }).catch(error => console.error('Error sharing:', error));
+                        return; // 成功呼叫原生分享後退出
+                    } else {
+                        // 如果不支援，可以提供一個替代方案或提示
+                        alert('您的裝置不支援原生分享功能，請使用下方的 Line 或 Facebook 按鈕分享連結。');
+                        return;
+                    }
+                case 'instagram':
+                    // Instagram 不支援網頁直接分享圖片/連結，只能提示
+                    alert('Instagram 不支援網頁一鍵分享圖片。請先點擊「下載分享圖」，然後手動上傳到 IG。');
+                    return;
+                default:
+                    return;
+            }
+
+            // 打開新的分享視窗
+            window.open(url, '_blank', 'width=600,height=400');
+        }
         
-        // --- 3. 統計分析與餅圖生成函數 ---
+        // --- 4. 統計分析與圖表生成函數 (無更動) ---
+
         function analyzeTopValues(list) {
             const analysis = {};
             const radarScores = {};
@@ -397,7 +499,6 @@
             return { chartStyle, legendHTML };
         }
         
-        // --- 4. 雷達圖繪製函數 (使用 Canvas) ---
         function drawRadarChart(canvasId, normalizedScores) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -504,7 +605,7 @@
             }
         }
         
-        // --- 5. 圖像生成與 QR Code 函數 ---
+        // --- 5. 圖像生成與 QR Code 函數 (無更動) ---
         
         window.generateQRCode = function() {
              // 確保每次重新渲染前清空容器
@@ -543,7 +644,7 @@
             });
         }
 
-        // --- 6. 更新結果頁渲染函數 ---
+        // --- 6. 更新結果頁渲染函數 (新增分享按鈕) ---
         function renderResult(list) {
             window.scrollTo(0, 0);
             const topList = list.slice(0, 10);
@@ -605,7 +706,32 @@
                     </div>
                     
                     <div class="share-area">
-                        <p style="font-size: 1.1em; color: #4a90e2; font-weight: bold; margin-bottom: 10px;">掃描分享給朋友測試</p>
+                        <p style="font-size: 1.1em; color: #4a90e2; font-weight: bold; margin-bottom: 10px;">分享結果給朋友</p>
+                        
+                        <!-- 新增分享按鈕區塊 -->
+                        <div class="share-actions">
+                            <!-- Line 分享 -->
+                            <button class="share-btn line-btn" onclick="shareToSocial('line')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.012 2C6.486 2 2 6.136 2 11.234c0 2.536 1.054 4.793 2.766 6.425l-1.07 3.868 4.09-1.57c.73.18 1.488.27 2.226.27 5.526 0 10.012-4.136 10.012-9.234C22.024 6.136 17.538 2 12.012 2zM15.4 15.65h-1.89c-.19 0-.34-.14-.34-.33v-3.72h1.89c.19 0 .34-.15.34-.33v-.93c0-.18-.15-.33-.34-.33h-1.89V9.75c0-.18-.15-.33-.34-.33h-1.88c-.19 0-.34.15-.34.33v.91h-1.88c-.19 0-.34.15-.34.33v.93c0 .18.15.33.34.33h1.88v3.72c0 .19-.15.33-.34.33h-1.88c-.19 0-.34.14-.34.33v.93c0 .18.15.33.34.33h5.71c.19 0 .34-.15.34-.33v-.93c.01-.19-.14-.33-.33-.33z"/></svg>
+                                Line 分享
+                            </button>
+                            <!-- Facebook 分享 -->
+                            <button class="share-btn fb-btn" onclick="shareToSocial('facebook')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2.04C6.465 2.04 2 6.505 2 12.04c0 5.176 3.78 9.444 8.75 10.25V14.99H8.448v-2.95h2.302v-2.22c0-2.26 1.353-3.498 3.398-3.498 1.012 0 1.874.072 2.122.103v2.443h-1.44c-1.134 0-1.355.539-1.355 1.328v1.734h2.723l-.444 2.95h-2.279v7.29C18.22 21.484 22 17.216 22 12.04c0-5.535-4.465-10-9.998-10z"/></svg>
+                                Facebook
+                            </button>
+                            <!-- Web Share API (手機原生分享) -->
+                            <button class="share-btn web-btn" onclick="shareToSocial('web')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.79l-4.22-2.55c.08-.24.18-.48.18-.72s-.1-.48-.18-.72l4.22-2.55c.52.49 1.2.79 1.96.79 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.08.48.18.72L11.53 9.2c-.52-.49-1.2-.79-1.96-.79-1.66 0-3 1.34-3 3s1.34 3 3 3c.76 0 1.44-.3 1.96-.79l4.22 2.55c-.08.24-.18.48-.18.72s.1.48.18.72L11.53 17.84c-.52-.49-1.2-.79-1.96-.79-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3c0-.24-.08-.48-.18-.72l4.22-2.55c.52.49 1.2.79 1.96.79 1.66 0 3-1.34 3-3s-1.34-3-3-3z"/></svg>
+                                原生分享 (手機)
+                            </button>
+                            <!-- IG 提示 -->
+                            <button class="share-btn ig-btn" onclick="shareToSocial('instagram')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4c0 3.2-2.6 5.8-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8C2 4.6 4.6 2 7.8 2zm-.2 2.1c-2.4 0-4.3 1.9-4.3 4.3v7.6c0 2.4 1.9 4.3 4.3 4.3h7.6c2.4 0 4.3-1.9 4.3-4.3V8.4c0-2.4-1.9-4.3-4.3-4.3H7.6zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.1c-1.7 0-3.1-1.4-3.1-3.1s1.4-3.1 3.1-3.1 3.1 1.4 3.1 3.1-1.4 3.1-3.1 3.1zm4.1-8.5a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z"/></svg>
+                                IG (需先下載圖)
+                            </button>
+                        </div>
+                        
                         <div class="qrcode-container" id="qrcode"></div>
                     </div>
                 </div> <!-- 截圖目標範圍結束 -->

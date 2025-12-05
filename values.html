@@ -181,6 +181,20 @@
             fill: #333;
         }
         
+        /* 浮動提示框樣式 */
+        .floating-message {
+            position: fixed; top: 20px; right: 20px; padding: 15px 25px; 
+            background: var(--primary); 
+            color: white; border-radius: 8px; z-index: 1000; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+            opacity: 0; transition: opacity 0.5s, transform 0.5s;
+            transform: translateY(-20px);
+            max-width: 320px;
+            text-align: center;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+        
     </style>
 </head>
 <body>
@@ -373,8 +387,30 @@
                 window.resolveChoice = (choice) => { state.resolveRef(choice); };
             });
         }
+        
+        // --- 3. 新增一個模擬 Alert 的浮動提示函數 ---
+        window.displayMessage = function(msg, type = 'info') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'floating-message';
+            messageDiv.style.background = type === 'info' ? 'var(--primary)' : 'red'; 
+            messageDiv.innerText = msg;
+            document.body.appendChild(messageDiv);
+            
+            // 顯示
+            setTimeout(() => {
+                messageDiv.style.opacity = '1';
+                messageDiv.style.transform = 'translateY(0)';
+            }, 50);
 
-        // --- 3. 社交分享函數 ---
+            // 隱藏並移除
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                messageDiv.style.transform = 'translateY(-20px)';
+                messageDiv.addEventListener('transitionend', () => messageDiv.remove());
+            }, 5000); // 顯示 5 秒
+        }
+        
+        // --- 4. 社交分享函數 (無更動) ---
         window.shareToSocial = function(platform) {
             const encodedUrl = encodeURIComponent(SHARE_URL);
             const encodedText = encodeURIComponent(SHARE_TEXT);
@@ -382,30 +418,26 @@
 
             switch (platform) {
                 case 'line':
-                    // Line 官方分享 URL
                     url = `https://social-plugins.line.me/lineit/share?url=${encodedUrl}&text=${encodedText}`;
                     break;
                 case 'facebook':
-                    // Facebook 分享 URL
                     url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
                     break;
                 case 'web':
-                    // Web Share API (原生手機分享)
                     if (navigator.share) {
                         navigator.share({
                             title: '核心價值觀探索器',
                             text: SHARE_TEXT,
                             url: SHARE_URL,
                         }).catch(error => console.error('Error sharing:', error));
-                        return; // 成功呼叫原生分享後退出
+                        return;
                     } else {
-                        // 如果不支援，可以提供一個替代方案或提示
-                        alert('您的裝置不支援原生分享功能，請使用下方的 Line 或 Facebook 按鈕分享連結。');
+                        displayMessage('您的裝置不支援原生分享功能，請使用下方的 Line 或 Facebook 按鈕分享連結。');
                         return;
                     }
                 case 'instagram':
-                    // Instagram 不支援網頁直接分享圖片/連結，只能提示
-                    alert('Instagram 不支援網頁一鍵分享圖片。請先點擊「下載分享圖」，然後手動上傳到 IG。');
+                    // 點擊 IG 按鈕時，提示使用者先下載再手動上傳
+                    displayMessage('Instagram 不支援網頁一鍵分享圖片。請先點擊「保存圖片並分享給朋友」下載，然後手動上傳到 IG。');
                     return;
                 default:
                     return;
@@ -415,7 +447,35 @@
             window.open(url, '_blank', 'width=600,height=400');
         }
         
-        // --- 4. 統計分析與圖表生成函數 (無更動) ---
+        // --- 5. 圖片下載與分享提示函數 (已修改，符合使用者需求) ---
+        window.downloadResultImage = function() {
+            const target = document.getElementById('capture-target');
+            
+            // 由於 html2canvas 必須等到 QR Code 和 Canvas 渲染完成
+            html2canvas(target, {
+                scale: 2, // 放大兩倍渲染，圖片更清晰
+                allowTaint: true,
+                useCORS: true,
+            }).then(canvas => {
+                // 將 Canvas 轉換為圖片連結
+                const imageURL = canvas.toDataURL("image/png");
+
+                // 創建一個臨時連結並觸發下載
+                const a = document.createElement('a');
+                a.href = imageURL;
+                a.download = '我的核心價值觀排序.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // 圖片下載成功後，顯示浮動提示，引導使用者進行社群分享（特別是 IG）
+                setTimeout(() => {
+                    displayMessage('圖片已成功下載到您的裝置！\n接下來請手動將圖片上傳至 Instagram，或使用下方的 Line / Facebook 按鈕分享連結。', 'info');
+                }, 500); 
+            });
+        }
+
+        // --- 6. 統計分析與圖表生成函數 (無更動) ---
 
         function analyzeTopValues(list) {
             const analysis = {};
@@ -605,7 +665,7 @@
             }
         }
         
-        // --- 5. 圖像生成與 QR Code 函數 (無更動) ---
+        // --- 7. 圖像生成與 QR Code 函數 (無更動) ---
         
         window.generateQRCode = function() {
              // 確保每次重新渲染前清空容器
@@ -622,29 +682,7 @@
             });
         }
         
-        window.downloadResultImage = function() {
-            const target = document.getElementById('capture-target');
-            
-            // 由於 html2canvas 必須等到 QR Code 和 Canvas 渲染完成
-            html2canvas(target, {
-                scale: 2, // 放大兩倍渲染，圖片更清晰
-                allowTaint: true,
-                useCORS: true,
-            }).then(canvas => {
-                // 將 Canvas 轉換為圖片連結
-                const imageURL = canvas.toDataURL("image/png");
-
-                // 創建一個臨時連結並觸發下載
-                const a = document.createElement('a');
-                a.href = imageURL;
-                a.download = '我的核心價值觀排序.png';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            });
-        }
-
-        // --- 6. 更新結果頁渲染函數 (新增分享按鈕) ---
+        // --- 8. 更新結果頁渲染函數 (已修改下載按鈕名稱) ---
         function renderResult(list) {
             window.scrollTo(0, 0);
             const topList = list.slice(0, 10);
@@ -736,7 +774,8 @@
                     </div>
                 </div> <!-- 截圖目標範圍結束 -->
 
-                <button class="btn" onclick="downloadResultImage()">下載分享圖 (PNG)</button>
+                <!-- 修改為使用者要求的按鈕名稱 -->
+                <button class="btn" onclick="downloadResultImage()">保存圖片並分享給朋友</button>
                 <button class="btn" style="background: #ccc; margin-top: 10px;" onclick="location.reload()">重新測試</button>
             `;
             

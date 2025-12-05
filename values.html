@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>核心價值觀探索器</title>
+    <!-- 引入外部函式庫 CDN，用於圖片生成和 QR Code -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
@@ -15,13 +16,12 @@
             --tooltip-bg: rgba(44, 62, 80, 0.95); 
             --category-color: #8899a6;
             
-            /* Chart Colors */
+            /* Chart Colors (5 categories) */
             --chart-c1: #4a90e2; /* 內在與自我 */
-            --chart-c2: #50e3c2; /* 關係與影響力 */
-            --chart-c3: #f5a623; /* 道德與靈性 */
-            --chart-c4: #e24a4a; /* 物質與環境 */
-            --chart-c5: #904ae2; /* 生活風格 */
-            --chart-c6: #4ad2e2; /* 使命與角色 */
+            --chart-c2: #50e3c2; /* 人際與社會 */
+            --chart-c3: #f5a623; /* 物質與環境 */
+            --chart-c4: #e24a4a; /* 工作與成就 */
+            --chart-c5: #904ae2; /* 探索與生活方式 */
         }
         
         body { font-family: "Microsoft JhengHei", -apple-system, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; color: #333; }
@@ -54,7 +54,7 @@
         .pk-card p { font-size: 1.1em; color: #555; min-height: 3em;}
         .scenario { background: #fff5f5; color: #c0392b; padding: 15px; border-radius: 8px; margin-top: 15px; font-style: italic; line-height: 1.5; }
         
-        /* --- 步驟 3 Results & Analysis Styles (新增分享區塊) --- */
+        /* --- 步驟 3 Results & Analysis Styles --- */
         .result-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; background: white; }
         .result-item:first-child { background: linear-gradient(to right, #fffdf0, white); border-left: 4px solid gold; }
         .rank { font-weight: bold; margin-right: 20px; color: #bdc3c7; font-size: 1.5em; width: 40px; text-align: center; }
@@ -63,19 +63,42 @@
         .result-item:nth-child(3) .rank { color: #cd7f32; }
         .result-details { flex-grow: 1; }
         .result-details .category-tag { font-size: 0.75em; color: var(--category-color); margin-left: 10px; border: 1px solid #eee; padding: 2px 6px; border-radius: 4px; }
-        
-        /* 統計分析區塊 */
-        .analysis-section { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 30px; margin: 40px 0; padding: 30px; border-radius: 12px; background: #fcfcfc; border: 1px solid #eee; }
-        .chart-container { width: 250px; height: 250px; flex-shrink: 0; margin-right: 20px; display: flex; align-items: center; justify-content: center; }
+
+        /* 統計分析區塊 - 調整為包含雷達圖 */
+        .analysis-section { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 30px; 
+            margin: 40px 0; 
+            padding: 30px; 
+            border-radius: 12px; 
+            background: #fcfcfc; 
+            border: 1px solid #eee; 
+            justify-content: center;
+        }
+        .chart-box { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-width: 300px;
+            max-width: 450px;
+            flex: 1; 
+        }
+        .chart-box h3 { color: #555; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px; width: 100%; text-align: center; }
+        .chart-container { width: 100%; max-width: 300px; height: 300px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }
         .pie-chart { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .summary-text { flex-grow: 1; min-width: 300px; max-width: 500px; display: flex; flex-direction: column; justify-content: center; }
+        
+        /* 雷達圖 Canvas 樣式 */
+        #radarChartCanvas { width: 100%; height: 100%; }
+
+        .summary-text { flex-grow: 1; min-width: 300px; max-width: 900px; margin-bottom: 20px; }
         .summary-text h3 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
         .summary-text p { font-size: 1.1em; line-height: 1.8; }
         .legend { margin-top: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .legend-item { display: flex; align-items: center; font-size: 0.9em; }
         .legend-color { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-        /* 新增：分享圖檔區域 */
+        /* 分享圖檔區域 */
         .share-area { 
             text-align: center; 
             margin: 40px 0 20px; 
@@ -108,110 +131,106 @@
     </div>
 
     <script>
-        // --- 1. 核心價值觀資料庫 (V4.0) ---
+        // --- 1. 核心價值觀資料庫 (V5.0 - 新增 5 大分類) ---
         const valuesData = [
-            // I. 內在驅動力與自我
-            {name: "能力感", category: "內在與自我", desc: "感覺自己有能力、能掌控和精通事務。", scenario: "在一個極度複雜的專案中，你感覺自己能輕易掌握所有細節並順利解決問題。"},
-            {name: "成就感", category: "內在與自我", desc: "在專業或個人領域達成困難的目標。", scenario: "獲得業界最高榮譽獎項，被公認為該領域的頂尖專家。"},
-            {name: "學習成長", category: "內在與自我", desc: "持續獲取新知識、新技能與洞察力。", scenario: "你被賦予無限的學習資源，能夠掌握世界上所有知識體系。"},
-            {name: "創造力", category: "內在與自我", desc: "發想新穎獨特的點子，創造藝術或創新。", scenario: "你創作出了一件跨時代的藝術作品，徹底改變了人們的審美觀。"},
-            {name: "挑戰性", category: "內在與自我", desc: "樂於接受困難和複雜的任務。", scenario: "你面前是一個看似不可能完成的專案，但成功將會帶來巨大的個人突破。"},
-            {name: "獨立自主", category: "內在與自我", desc: "能夠自主決定自己的方向和行為。", scenario: "你擁有完全的決策權，可以自由選擇工作的時間、地點與方式。"},
-            {name: "獨特性", category: "內在與自我", desc: "展現與眾不同的個人特質與風格。", scenario: "你的個人風格獨樹一幟，無需追隨潮流，反而成為他人的榜樣。"},
-            {name: "熱情", category: "內在與自我", desc: "對生活、工作或特定領域充滿強烈的興趣。", scenario: "你的工作就是你最大的興趣，讓你每天都能充滿幹勁、樂此不疲。"},
-            {name: "自我提升", category: "內在與自我", desc: "持續精進自己的品格、習慣與能力。", scenario: "每天都能感覺到自己在進步，並且將一個壞習慣成功轉化為正向力量。"},
-            {name: "紀律", category: "內在與自我", desc: "自我控制，能夠堅持執行計畫。", scenario: "你為自己設定了長期目標，並能不受外界干擾地每天堅持執行，直到成功。"},
+            // 1️⃣ 內在與自我 (Internal / Self)
+            {name: "能力感", category: "內在與自我", desc: "感覺自己有能力、掌握事情", scenario: "你剛解決了一個同事解不出的問題，心裡充滿成就感"},
+            {name: "自主", category: "內在與自我", desc: "能自己決定方向與方法", scenario: "今天你決定先處理哪個專案，完全不需等主管指示"},
+            {name: "自我成長", category: "內在與自我", desc: "持續提升自己", scenario: "你每天抽 30 分鐘學新技能，看到自己比上週進步"},
+            {name: "韌性", category: "內在與自我", desc: "從挫折中快速恢復", scenario: "專案被否決，你分析原因後提出新方案"},
+            {name: "成就感", category: "內在與自我", desc: "完成有價值的事情", scenario: "你把一個專案完成並看到成果被採用"},
+            {name: "意義", category: "內在與自我", desc: "做的事對自己或他人有用", scenario: "你幫同事改善流程，他們因此少加班"},
+            {name: "自律", category: "內在與自我", desc: "能管理自己的時間與行為", scenario: "你按計畫完成今天所有待辦事項"},
+            {name: "自尊", category: "內在與自我", desc: "對自己有尊重感", scenario: "拒絕做不符合原則的事情，仍心安理得"},
+            {name: "情緒穩定", category: "內在與自我", desc: "能管理與調節情緒", scenario: "面對突發狀況，你保持冷靜並解決問題"},
+            {name: "誠實", category: "內在與自我", desc: "對自己與他人誠實", scenario: "你如實呈報工作進度與問題，不隱瞞困難"},
+            {name: "創造力", category: "內在與自我", desc: "想出新方法或新想法", scenario: "你設計出一個新的工作流程，同事都讚賞"},
+            {name: "好奇心", category: "內在與自我", desc: "對未知有興趣", scenario: "你主動探索新領域或工具，發現更有效的方式"},
+            
+            // 2️⃣ 人際與社會 (Relationships / Social)
+            {name: "被看見", category: "人際與社會", desc: "他人理解你的能力與價值", scenario: "你的提案被主管直接表揚"},
+            {name: "親密感", category: "人際與社會", desc: "與他人建立深厚連結", scenario: "你和朋友聊到深夜，毫無保留分享心事"},
+            {name: "信任", category: "人際與社會", desc: "相信他人並被信任", scenario: "同事把重要任務交給你，你知道他相信你"},
+            {name: "尊重", category: "人際與社會", desc: "尊重自己與他人的界限", scenario: "拒絕不合理要求，對方仍理解你"},
+            {name: "社會認可", category: "人際與社會", desc: "被社會或團體肯定", scenario: "專案獲得公司表揚或獎項"},
+            {name: "同理心", category: "人際與社會", desc: "能理解他人情緒", scenario: "同事遇到困難，你主動安慰與協助"},
+            {name: "合作", category: "人際與社會", desc: "與他人順利配合", scenario: "小組共同完成任務，彼此分工協調"},
+            {name: "公平", category: "人際與社會", desc: "對待他人公正無私", scenario: "分配任務時兼顧每個人的能力與工作量"},
+            {name: "影響力", category: "人際與社會", desc: "能影響他人的想法或行為", scenario: "你的建議被採納並改善團隊流程"},
+            {name: "責任感", category: "人際與社會", desc: "對自己與他人負責", scenario: "專案延期時你提出解決方案承擔責任"},
+            {name: "社會貢獻", category: "人際與社會", desc: "為社會帶來正向改變", scenario: "參加公益或志願活動，看到幫助到他人"},
+            {name: "榮譽感", category: "人際與社會", desc: "在群體中感到尊重與認可", scenario: "獲得團隊表彰或獎項，心裡滿足"},
 
-            // II. 社會關係與影響力
-            {name: "家庭親密", category: "關係與影響力", desc: "與家人保持深厚、充滿愛與支持的連結。", scenario: "每天都能與家人共度高品質的晚餐時光，關係緊密無間。"},
-            {name: "愛", category: "關係與影響力", desc: "給予與接受深厚、無條件的愛與連結。", scenario: "你擁有一份靈魂伴侶般的愛情，彼此理解、支持且永不分離。"},
-            {name: "友誼", category: "關係與影響力", desc: "擁有長久、信任且相互支持的朋友關係。", scenario: "你有一群可以兩肋插刀的摯友，你們一起度過了所有的困難時刻。"},
-            {name: "社群連結", category: "關係與影響力", desc: "參與、服務於一個群體或社區，獲得歸屬感。", scenario: "你所在的小鎮居民彼此互助，你感覺自己是這個大家庭中重要的一份子。"},
-            {name: "奉獻服務", category: "關係與影響力", desc: "將自己的資源投入到對他人有益的事情上。", scenario: "你將自己的時間用於照顧弱勢群體，並親眼看到他們的生活因你而改善。"},
-            {name: "影響力", category: "關係與影響力", desc: "擁有說服或領導他人的能力，改變大局。", scenario: "你的演講能夠感召成千上萬的人，引領社會的變革。"},
-            {name: "被看見", category: "關係與影響力", desc: "獲得公眾的關注、認可和重要性。", scenario: "你的成就或觀點始終是人們關注的焦點，你感覺到自己的存在無比重要。"},
-            {name: "尊重", category: "關係與影響力", desc: "重視他人作為個體的價值，平等對待所有人。", scenario: "無論你的社會地位如何，所有人都發自內心地尊重你的意見與存在。"},
-            {name: "信任", category: "關係與影響力", desc: "相信他人和自己，並營造安全感。", scenario: "你所處的環境中沒有謊言和背叛，所有人都對彼此開誠布公。"},
-            {name: "合作", category: "關係與影響力", desc: "與他人共同努力達成目標，重視團隊。", scenario: "你參與的團隊總是能高效合作，每個人的能力都被完美結合。"},
-
-            // III. 道德、心態與靈性
-            {name: "誠實正直", category: "道德與靈性", desc: "堅守道德原則，即使面對壓力也不妥協。", scenario: "發現了公司的一個重大錯誤，即使會導致自己被解僱，仍決定公開真相。"},
-            {name: "內心平靜", category: "道德與靈性", desc: "內心安詳，沒有焦慮、衝突或混亂。", scenario: "無論外在環境多麼混亂，你始終能保持內心的寧靜與禪意。"},
-            {name: "正義", category: "道德與靈性", desc: "確保公平、道德和法律的平衡。", scenario: "你參與了一場為社會弱勢爭取權益的運動，最終成功改變了不公正的制度。"},
-            {name: "韌性", category: "道德與靈性", desc: "從失敗或逆境中快速恢復並成長。", scenario: "你經歷了人生最大的低谷，但只用了很短的時間就重新站了起來，變得更加堅強。"},
-            {name: "樂觀", category: "道德與靈性", desc: "對未來抱持希望，相信事物會變得更好。", scenario: "無論情況多糟，你始終能看到光明的一面，並且激勵周圍的人。"},
-            {name: "感恩", category: "道德與靈性", desc: "珍惜所擁有的一切，表達謝意。", scenario: "你每天都對生活中的小確幸感到滿足，並且總是能發自內心地感謝他人。"},
-            {name: "幽默感", category: "道德與靈性", desc: "保持樂觀，用笑聲來緩解緊張。", scenario: "你總是能用幽默化解尷尬的社交場合，讓周圍的人感到放鬆和快樂。"},
-            {name: "同理心", category: "道德與靈性", desc: "能夠理解並分享他人的感受與痛苦。", scenario: "你總是能準確感受到朋友的痛苦，並提供最貼心的支持與安慰。"},
-            {name: "寬恕", category: "道德與靈性", desc: "放下過去的傷害與怨恨，讓自己釋懷。", scenario: "你選擇放下多年前對你造成傷害的人，從而獲得了真正的內心釋放。"},
-            {name: "冥想靈性", category: "道德與靈性", desc: "尋求超越物質世界的意義與覺醒。", scenario: "你找到了人生的終極意義，心靈上達到了前所未有的覺醒與平靜。"},
-
-            // IV. 物質與外在環境
-            {name: "財富富足", category: "物質與環境", desc: "擁有充裕的物質資源和金錢。", scenario: "你擁有巨額財產，可以隨時購買任何想要的奢侈品，並享受頂級生活。"},
-            {name: "安全穩定", category: "物質與環境", desc: "環境和生活穩定，免於恐懼和風險。", scenario: "你擁有絕對穩定的工作和居住環境，永遠不用擔心失業或重大意外風險。"},
-            {name: "身心健康", category: "物質與環境", desc: "追求身體和精神上的最佳狀態。", scenario: "活到 90 歲仍然無病無痛，每天精神飽滿地醒來，體能充沛。"},
-            {name: "舒適便利", category: "物質與環境", desc: "享受輕鬆、便利和無壓力的物質生活。", scenario: "你的生活設備總是頂級且全自動化，讓你無需費力就能享受最舒適的體驗。"},
-            {name: "美感", category: "物質與環境", desc: "欣賞和追求事物中的和諧、優雅和藝術性。", scenario: "你所處的環境總是充滿設計感，每天都能被美麗的事物環繞。"},
-            {name: "聲譽地位", category: "物質與環境", desc: "享有高度的尊重、名望和社會階層。", scenario: "你是公認的社會名流，你的名字和事蹟被寫進了教科書。"},
-            {name: "效率", category: "物質與環境", desc: "以最少的時間和資源完成最多的工作。", scenario: "你擁有極致的工作效率，能在別人花一週的時間內完成一個月的任務。"},
-            {name: "環境保護", category: "物質與環境", desc: "重視並積極參與保護自然環境。", scenario: "你發起了一場成功的環境運動，讓一個被污染的地區恢復了生機。"},
-            {name: "實用性", category: "物質與環境", desc: "重視事物的實際價值和功能，避免浪費。", scenario: "你所做的每個決定都以效益和結果為導向，絕不浪費資源在無用的事物上。"},
-            {name: "透明度", category: "物質與環境", desc: "追求公開、清晰、無隱藏的資訊交流。", scenario: "你所處的組織信息完全公開，沒有秘密或隱藏的議程。"},
-
-            // V. 生活風格與取向
-            {name: "自由", category: "生活風格", desc: "擁有選擇的權利，不受限制或約束。", scenario: "你可以隨時說走就走，世界上沒有任何規矩能約束你的行動。"},
-            {name: "冒險探索", category: "生活風格", desc: "對未知充滿好奇，喜歡嘗試新事物。", scenario: "你一直在探索未開發的地域，每天都會面對新的文化和挑戰。"},
-            {name: "刺激", category: "生活風格", desc: "追求感官上的興奮和高強度的體驗。", scenario: "你總是沉浸在極限運動或充滿腎上腺素的挑戰中。"},
-            {name: "多樣性", category: "生活風格", desc: "享受不同種類的體驗，避免單調。", scenario: "你每天都在從事不同性質的工作和活動，生活色彩斑斕、充滿變化。"},
-            {name: "樂趣", category: "生活風格", desc: "將歡笑和快樂帶入日常生活。", scenario: "你每天都會找到讓自己發自內心歡笑的事物，生活充滿了精彩的體驗。"},
-            {name: "工作生活平衡", category: "生活風格", desc: "將時間平均分配給職業和個人生活。", scenario: "你既能獲得事業上的成功，又能保證每天有充足的時間陪伴家人和放鬆身心。"},
-            {name: "簡單性", category: "生活風格", desc: "追求生活的簡約，去除不必要的複雜。", scenario: "你的生活沒有多餘的物質負擔或複雜的人際關係，一切都清晰且簡單。"},
-            {name: "預期可控", category: "生活風格", desc: "喜歡有結構、有規劃、一切在掌控中。", scenario: "你的生活井然有序，所有事情都按計畫進行，沒有任何突發意外。"},
-            {name: "慷慨", category: "生活風格", desc: "樂於分享時間、金錢或資源。", scenario: "你將大量的財產捐贈給慈善機構，並且看到這些幫助產生了巨大的漣漪效應。"},
-            {name: "傳統", category: "生活風格", desc: "尊重並維護歷史悠久的習俗和文化。", scenario: "你被賦予了傳承家族或文化傳統的使命，並成功地將其延續到下一代。"},
-
-            // VI. 使命與角色
-            {name: "目標使命", category: "使命與角色", desc: "生活有清晰、有意義的方向和使命。", scenario: "你非常清楚自己的人生目標，每天醒來都知道自己正在為之奮鬥。"},
-            {name: "權力", category: "使命與角色", desc: "掌握資源並能決定他人的行動和方向。", scenario: "你身居高位，你的一句話就能決定許多人的職業生涯或命運。"},
-            {name: "協調性", category: "使命與角色", desc: "在衝突中，能找到各方都能接受的平衡點。", scenario: "你總是在爭吵的兩方之間扮演和事佬，成功地解決了多年的爭端。"},
-            {name: "責任感", category: "使命與角色", desc: "對自己的行為負責，對他人產生正面影響。", scenario: "你擔任了一個重要的職位，並成功地肩負起重大的責任，無人可以取代你。"},
-            {name: "可靠性", category: "使命與角色", desc: "信守承諾，準時完成任務，值得信賴。", scenario: "所有人都知道，只要交給你處理的事情，就一定會被完美準時地完成。"},
-            {name: "專注", category: "使命與角色", desc: "能夠長時間集中注意力於單一任務。", scenario: "你在嘈雜的環境中也能保持高度專注，並在短時間內解決複雜問題。"},
-            {name: "謙卑", category: "使命與角色", desc: "保持對萬物的敬畏之心，願意承認不足。", scenario: "即使你擁有很多，你依然覺得自己還有許多需要學習和成長的地方。"},
-            {name: "接納", category: "使命與角色", desc: "無條件地接受自己和他人的優點和缺點。", scenario: "你完全接納了自己的所有不完美，也以同樣的心態對待身邊的人。"},
-            {name: "犧牲", category: "使命與角色", desc: "願意為了更大的利益放棄個人需求。", scenario: "你為了保護你所愛的人或信念，放棄了自己的長期夢想。"},
-            {name: "智慧", category: "使命與角色", desc: "擁有通透的洞察力，做出明智的判斷。", scenario: "在兩難的選擇中，你總能做出最長遠、最正確的判斷。"}
+            // 3️⃣ 物質與環境 (Material / Environment)
+            {name: "安全感", category: "物質與環境", desc: "身體或生活環境穩定", scenario: "居住安全、收入穩定，讓你安心"},
+            {name: "可預測性", category: "物質與環境", desc: "生活與工作有規律", scenario: "每天固定時間起床、運動、工作"},
+            {name: "舒適", category: "物質與環境", desc: "生活環境令人放鬆", scenario: "回家看到乾淨明亮的房間，心情放鬆"},
+            {name: "實用性", category: "物質與環境", desc: "事物能直接使用或帶來效果", scenario: "新買的工具可以立刻解決工作問題"},
+            {name: "財務穩定", category: "物質與環境", desc: "經濟狀況穩定", scenario: "月收入足夠生活並存款"},
+            {name: "健康", category: "物質與環境", desc: "身體與心理狀態良好", scenario: "一周運動三次，感覺精力充沛"},
+            {name: "簡單性", category: "物質與環境", desc: "環境或生活簡單明確", scenario: "家務流程簡單，物品整齊易拿"},
+            {name: "清潔整齊", category: "物質與環境", desc: "環境整潔有序", scenario: "桌面乾淨、物品歸位，心情愉快"},
+            {name: "自然連結", category: "物質與環境", desc: "與自然環境有聯繫", scenario: "假日走進公園或山林，放鬆心情"},
+            {name: "資源充足", category: "物質與環境", desc: "擁有足夠資源完成事情", scenario: "家裡有工具與材料能應付需求"},
+            {name: "私密空間", category: "物質與環境", desc: "有自己的私人領域", scenario: "房間可以關掉手機、專心看書"},
+            {name: "秩序感", category: "物質與環境", desc: "組織、流程清楚", scenario: "工作流程標準化，事情井然有序"},
+            
+            // 4️⃣ 工作與成就 (Work / Achievement)
+            {name: "效率", category: "工作與成就", desc: "以最少資源完成目標", scenario: "快速完成任務並達成成果"},
+            {name: "持續學習", category: "工作與成就", desc: "不斷吸收專業知識", scenario: "參加線上課程學新技能"},
+            {name: "挑戰性", category: "工作與成就", desc: "喜歡突破困難", scenario: "接手高難度專案，成功解決問題"},
+            {name: "領導力", category: "工作與成就", desc: "能帶領與指導他人", scenario: "組織團隊完成目標，成員得到成長"},
+            {name: "精準", category: "工作與成就", desc: "做事精確不出錯", scenario: "數據分析結果沒有任何錯誤"},
+            {name: "創新", category: "工作與成就", desc: "發展新方法或模式", scenario: "提出新工作流程，提升效率"},
+            {name: "成果導向", category: "工作與成就", desc: "注重結果而非過程", scenario: "專案完成後獲主管肯定"},
+            {name: "結構化", category: "工作與成就", desc: "有條理安排工作", scenario: "任務分解明確，容易執行"},
+            {name: "壓力管理", category: "工作與成就", desc: "能承受高壓情況", scenario: "緊急專案仍能按時完成"},
+            {name: "目標感", category: "工作與成就", desc: "明確知道自己要達成什麼", scenario: "訂立每周里程碑，清楚方向"},
+            {name: "責任感", category: "工作與成就", desc: "對任務與團隊負責", scenario: "專案失敗時提出解決方案"},
+            {name: "公開表現", category: "工作與成就", desc: "展示成果給他人", scenario: "在會議上呈現報告，受到肯定"},
+            
+            // 5️⃣ 探索與生活方式 (Exploration / Lifestyle)
+            {name: "好奇心", category: "探索與生活方式", desc: "對未知事物有興趣", scenario: "嘗試新工具、新技能，探索效果"},
+            {name: "冒險", category: "探索與生活方式", desc: "願意嘗試新挑戰", scenario: "參加戶外極限運動或新活動"},
+            {name: "多樣性", category: "探索與生活方式", desc: "生活或工作多變化", scenario: "一周安排不同類型專案或活動"},
+            {name: "自我表達", category: "探索與生活方式", desc: "能表達內心想法與創意", scenario: "畫畫、寫作或設計作品"},
+            {name: "樂趣", category: "探索與生活方式", desc: "從活動中獲得愉快", scenario: "跳舞、旅行、聽音樂時感到滿足"},
+            {name: "創造力", category: "探索與生活方式", desc: "設計新事物或方法", scenario: "製作手工藝或設計新流程"},
+            {name: "靈活性", category: "探索與生活方式", desc: "能適應變化", scenario: "臨時調整計畫仍完成目標"},
+            {name: "學習冒險", category: "探索與生活方式", desc: "從失敗中學習", scenario: "嘗試新食譜或DIY，雖失敗但有收穫"},
+            {name: "時間自由", category: "探索與生活方式", desc: "自由安排生活與休閒", scenario: "自主決定假期或工作順序"},
+            {name: "探索精神", category: "探索與生活方式", desc: "主動尋找新體驗", scenario: "去陌生城市旅行，體驗不同文化"},
+            {name: "感官享受", category: "探索與生活方式", desc: "重視感官體驗", scenario: "享受美食、音樂、香氛等體驗"},
+            {name: "心流體驗", category: "探索與生活方式", desc: "沉浸於某件事物中", scenario: "專注完成藝術、手作或專案，忘了時間"}
         ];
 
         // --- 2. 程式邏輯與輔助函數 ---
         let state = { selected: new Set(), resolveRef: null };
         const app = document.getElementById('app');
 
-        // 定義顏色與類別的對應，用於餅圖
+        // 定義顏色與類別的對應，用於餅圖與雷達圖
         const categoryMap = {
-            "內在與自我": { color: "var(--chart-c1)" },
-            "關係與影響力": { color: "var(--chart-c2)" },
-            "道德與靈性": { color: "var(--chart-c3)" },
-            "物質與環境": { color: "var(--chart-c4)" },
-            "生活風格": { color: "var(--chart-c5)" },
-            "使命與角色": { color: "var(--chart-c6)" }
+            "內在與自我": { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-c1').trim() },
+            "人際與社會": { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-c2').trim() },
+            "物質與環境": { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-c3').trim() },
+            "工作與成就": { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-c4').trim() },
+            "探索與生活方式": { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-c5').trim() }
         };
-        
+
         // 外部分享連結 (請根據您實際發布的 URL 填寫)
-        const SHARE_URL = 'https://joyceeeeisme.github.io/vibe-code/values.html';
+        const SHARE_URL = 'https://your-domain.com/values.html'; // 請更新此 URL
 
-
-        // 階段一、二的函數 (省略，保持不變)
+        // 階段一、二的函數 (修正 Step 1 的 Tooltip)
         function renderStep1() {
-            // ... (函數內容不變)
             app.innerHTML = `
                 <h1>步驟 1/2: 初步篩選</h1>
-                <p class="subtitle">請從下方勾選出您覺得 **重要** 的價值觀（建議 10-20 個）。<br>💡 <b>提示：滑鼠移到卡片上，可以看到詳細解釋。</b></p>
+                <p class="subtitle">請從下方勾選出您覺得 **重要** 的價值觀（建議 10-20 個）。<br>💡 <b>提示：滑鼠移到卡片上，可以看到詳細描述。情境將於下一階段出現。</b></p>
                 <div class="grid">
                     ${valuesData.map((v, i) => `
                         <div class="card" id="c-${i}" onclick="toggle(${i})">
                             <span class="value-name">${v.name}</span>
                             <span class="value-category">${v.category}</span>
+                            <!-- 修正：只顯示描述 (desc)，不顯示情境 (scenario) -->
                             <div class="tooltip">${v.desc}</div>
                         </div>
                     `).join('')}
@@ -278,13 +297,15 @@
                             <h2>${a.name}</h2>
                             <span class="pk-category">${a.category}</span>
                             <p>${a.desc}</p>
-                            <div class="scenario">情境：${a.scenario}</div>
+                            <!-- 情境在步驟二顯示 -->
+                            <div class="scenario">情境：${a.scenario}</div> 
                         </div>
                         <div class="pk-card" onclick="resolveChoice('B')">
                             <h2>${b.name}</h2>
                             <span class="pk-category">${b.category}</span>
                             <p>${b.desc}</p>
-                            <div class="scenario">情境：${b.scenario}</div>
+                            <!-- 情境在步驟二顯示 -->
+                            <div class="scenario">情境：${b.scenario}</div> 
                         </div>
                     </div>
                 `;
@@ -293,43 +314,68 @@
             });
         }
         
-        // --- 統計分析與餅圖生成函數 (無更動) ---
+        // --- 3. 統計分析與餅圖生成函數 ---
         function analyzeTopValues(list) {
             const analysis = {};
-            const total = list.length;
+            const radarScores = {};
+            const categories = Object.keys(categoryMap);
+            categories.forEach(cat => {
+                analysis[cat] = { count: 0, percentage: 0 };
+                radarScores[cat] = 0;
+            });
+
+            const topList = list.slice(0, 10);
+            const total = topList.length;
             let highestCategory = { name: '', count: 0 };
-            
-            list.forEach(v => {
+            const MAX_POSSIBLE_SCORE = 55; // 10+9+...+1 = 55 (if all top 10 are in one category)
+
+            topList.forEach((v, i) => {
                 const cat = v.category;
-                analysis[cat] = analysis[cat] || { count: 0, percentage: 0 };
-                analysis[cat].count++;
+                const score = total - i; // Rank 1 gets 10, Rank 10 gets 1
                 
+                analysis[cat].count++;
+                radarScores[cat] += score;
+
                 if (analysis[cat].count > highestCategory.count) {
                     highestCategory = { name: cat, count: analysis[cat].count };
                 }
             });
 
+            // Calculate percentage for Pie Chart
             Object.keys(analysis).forEach(cat => {
                 analysis[cat].percentage = Math.round((analysis[cat].count / total) * 100);
             });
             
             const sortedAnalysis = Object.keys(analysis)
                 .map(cat => ({ category: cat, ...analysis[cat] }))
-                .sort((a, b) => b.percentage - a.percentage); 
+                .filter(item => item.count > 0) // Only include categories with values
+                .sort((a, b) => b.percentage - a.percentage);
+            
+            // Calculate normalized radar scores (0-10 scale)
+            const normalizedRadarScores = {};
+            Object.keys(radarScores).forEach(cat => {
+                // 將原始分數 0-55 映射到 0-10
+                normalizedRadarScores[cat] = (radarScores[cat] / MAX_POSSIBLE_SCORE) * 10;
+            });
 
-            return { sortedAnalysis, total, highestCategory };
+            return { sortedAnalysis, total, highestCategory, normalizedRadarScores };
         }
 
         function createPieChartHTML(analysis) {
             let gradientString = [];
             let currentDegree = 0;
             let legendHTML = '';
+            
+            // 由於餅圖要求總和為 100%，如果 Top10 沒選滿，可能會不準確，但我們用 Top 10 為基礎計算
+            const totalPercentage = analysis.sortedAnalysis.reduce((sum, item) => sum + item.percentage, 0);
 
-            analysis.sortedAnalysis.forEach((item, index) => {
+            analysis.sortedAnalysis.forEach((item) => {
                 const color = categoryMap[item.category].color;
-                const endDegree = currentDegree + item.percentage;
+                // 調整百分比以確保總和可能略低於 100%
+                const degree = (item.percentage / 100) * 360; 
+                const endDegree = currentDegree + degree;
                 
-                gradientString.push(`${color} ${currentDegree}% ${endDegree}%`);
+                gradientString.push(`${color} ${currentDegree}deg ${endDegree}deg`);
 
                 legendHTML += `
                     <div class="legend-item">
@@ -340,31 +386,125 @@
 
                 currentDegree = endDegree;
             });
-
-            let summaryText = `您的核心價值觀前 ${analysis.total} 名主要集中在以下領域：`;
-            if (analysis.highestCategory.count > analysis.total * 0.3) { 
-                summaryText += `<br><br><b>🏆 趨勢總結：</b><br>您的價值觀高度集中在「${analysis.highestCategory.name}」類，該領域佔比高達 ${analysis.sortedAnalysis[0].percentage}%。這顯示您目前生命中最核心的驅動力就是圍繞著「${analysis.highestCategory.name}」相關的需求。`;
-            } else {
-                summaryText += `<br><br>您的價值觀分佈較為平衡，但傾向於「${analysis.highestCategory.name}」等領域，顯示您在多方面都有所重視。`;
+            
+            // 如果總和不足 360 度，補齊
+            if (currentDegree < 360) {
+                 gradientString.push(`transparent ${currentDegree}deg 360deg`);
             }
 
             const chartStyle = `background: conic-gradient(${gradientString.join(', ')});`;
 
-            return `
-                <div class="analysis-section">
-                    <div class="chart-container">
-                        <div class="pie-chart" style="${chartStyle}"></div>
-                    </div>
-                    <div class="summary-text">
-                        <h3>前十名分類分析</h3>
-                        <p>${summaryText}</p>
-                        <div class="legend">${legendHTML}</div>
-                    </div>
-                </div>
-            `;
+            return { chartStyle, legendHTML };
         }
         
-        // --- NEW: 圖片生成與 QR Code 函數 ---
+        // --- 4. 雷達圖繪製函數 (使用 Canvas) ---
+        function drawRadarChart(canvasId, normalizedScores) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const size = 300;
+            canvas.width = size;
+            canvas.height = size;
+            const center = size / 2;
+            const radius = size * 0.4;
+            const categories = Object.keys(normalizedScores);
+            const numPoints = categories.length;
+            const angleStep = (2 * Math.PI) / numPoints;
+            const maxValue = 10; // Normalized max score
+
+            // 繪製網格 (多邊形)
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 5; i++) {
+                ctx.beginPath();
+                const currentRadius = (radius / 5) * i;
+                for (let j = 0; j < numPoints; j++) {
+                    const angle = j * angleStep - Math.PI / 2;
+                    const x = center + currentRadius * Math.cos(angle);
+                    const y = center + currentRadius * Math.sin(angle);
+                    if (j === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            // 繪製軸線
+            ctx.strokeStyle = '#999';
+            for (let i = 0; i < numPoints; i++) {
+                ctx.beginPath();
+                ctx.moveTo(center, center);
+                const angle = i * angleStep - Math.PI / 2;
+                const x = center + radius * Math.cos(angle);
+                const y = center + radius * Math.sin(angle);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+
+            // 繪製分數區域
+            ctx.beginPath();
+            ctx.fillStyle = categoryMap[categories[0]].color + '33'; // Semi-transparent
+            ctx.strokeStyle = categoryMap[categories[0]].color;
+            ctx.lineWidth = 2;
+
+            for (let i = 0; i < numPoints; i++) {
+                const cat = categories[i];
+                const score = normalizedScores[cat] || 0;
+                // 將 0-10 分數映射到 0-radius 距離
+                const distance = (score / maxValue) * radius; 
+                const angle = i * angleStep - Math.PI / 2;
+                
+                const x = center + distance * Math.cos(angle);
+                const y = center + distance * Math.sin(angle);
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+
+                // 繪製得分點 (小圓圈)
+                ctx.fillStyle = categoryMap[cat].color;
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // 繪製標籤 (類別名稱)
+            ctx.font = '14px Arial, Microsoft JhengHei';
+            ctx.fillStyle = '#333';
+            const labelOffset = 15;
+
+            for (let i = 0; i < numPoints; i++) {
+                const angle = i * angleStep - Math.PI / 2;
+                let x = center + (radius + labelOffset) * Math.cos(angle);
+                let y = center + (radius + labelOffset) * Math.sin(angle);
+                
+                // 調整文字對齊，使其更靠近中心線
+                ctx.textAlign = (Math.abs(x - center) < 1) ? 'center' : (x > center ? 'left' : 'right');
+                ctx.textBaseline = (Math.abs(y - center) < 1) ? (y > center ? 'top' : 'bottom') : 'middle';
+
+                // 如果接近垂直，微調 Y 座標
+                if (Math.abs(x - center) < 5) {
+                    y += (y > center ? 5 : -5);
+                }
+                
+                // 如果是水平方向，微調 X 座標
+                if (Math.abs(y - center) < 5) {
+                    x += (x > center ? 5 : -5);
+                }
+
+                ctx.fillText(categories[i], x, y);
+            }
+        }
+        
+        // --- 5. 圖像生成與 QR Code 函數 ---
         
         window.generateQRCode = function() {
              // 確保每次重新渲染前清空容器
@@ -384,9 +524,7 @@
         window.downloadResultImage = function() {
             const target = document.getElementById('capture-target');
             
-            // 由於 html2canvas 必須等到 QR Code 渲染完成 (Canvas/SVG) 才能正確截取，
-            // 所以我們將截圖操作延後，確保網頁元素都已繪製。
-            // 此外，為了讓截圖的圖片清晰，我們會放大渲染比例。
+            // 由於 html2canvas 必須等到 QR Code 和 Canvas 渲染完成
             html2canvas(target, {
                 scale: 2, // 放大兩倍渲染，圖片更清晰
                 allowTaint: true,
@@ -405,19 +543,54 @@
             });
         }
 
-        // --- 更新結果頁渲染函數 ---
+        // --- 6. 更新結果頁渲染函數 ---
         function renderResult(list) {
             window.scrollTo(0, 0);
             const topList = list.slice(0, 10);
             
-            const analysis = analyzeTopValues(topList);
-            const chartHTML = createPieChartHTML(analysis);
+            const { sortedAnalysis, highestCategory, normalizedRadarScores } = analyzeTopValues(topList);
+            const { chartStyle, legendHTML } = createPieChartHTML({ sortedAnalysis });
 
             app.innerHTML = `
-                <div id="capture-target"> <h1 style="margin-bottom: 5px;">🎉 您的核心價值觀排行榜</h1>
-                    <p class="subtitle" style="margin-bottom: 20px;">根據內心深處的選擇，這是對您最重要的排序結果。</p>
+                <div id="capture-target"> <!-- 截圖目標範圍 -->
+                    <h1 style="margin-bottom: 5px;">🎉 您的核心價值觀排行榜</h1>
+                    <p class="subtitle" style="margin-bottom: 20px;">這是您內心深處 Top 10 的排序結果與能量分佈。</p>
                     
-                    ${chartHTML} <h3 style="color: #333; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;">價值觀詳細排名 (Top ${topList.length})</h3>
+                    <div class="summary-text">
+                        <h3 style="border-bottom: 2px solid var(--primary); color: #333;">總體分析與能量分佈</h3>
+                        <p>
+                            您的核心價值觀主要集中在以下領域：
+                            <br><br><b>🏆 趨勢總結：</b>
+                            ${highestCategory.count > topList.length * 0.3 ? 
+                                `您的價值觀高度集中在「${highestCategory.name}」類，該領域佔比高達 ${sortedAnalysis[0].percentage}%。這顯示您目前生命中最核心的驅動力就是圍繞著「${highestCategory.name}」相關的需求。` :
+                                `您的價值觀分佈較為平衡，但傾向於「${highestCategory.name}」等領域，顯示您在多方面都有所重視。`
+                            }
+                        </p>
+                    </div>
+
+                    <div class="analysis-section">
+                        <!-- 左側：分類餅圖 -->
+                        <div class="chart-box">
+                            <h3>Top 10 價值觀分類比例</h3>
+                            <div class="chart-container">
+                                <div class="pie-chart" style="${chartStyle}"></div>
+                            </div>
+                            <div class="legend" style="width: 100%; max-width: 300px;">${legendHTML}</div>
+                        </div>
+
+                        <!-- 右側：雷達圖 -->
+                        <div class="chart-box">
+                            <h3>雷達圖：五大維度能量分佈</h3>
+                            <div class="chart-container">
+                                <canvas id="radarChartCanvas"></canvas>
+                            </div>
+                            <p style="font-size: 0.9em; color: #777; margin-top: 10px;">
+                                數值越高，表示您的 Top 10 價值觀中該維度佔比越重。
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <h3 style="color: #333; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;">價值觀詳細排名 (Top ${topList.length})</h3>
                     <div>
                         ${topList.map((v, i) => `
                             <div class="result-item">
@@ -435,12 +608,19 @@
                         <p style="font-size: 1.1em; color: #4a90e2; font-weight: bold; margin-bottom: 10px;">掃描分享給朋友測試</p>
                         <div class="qrcode-container" id="qrcode"></div>
                     </div>
-                </div> <button class="btn" onclick="downloadResultImage()">下載分享圖 (PNG)</button>
+                </div> <!-- 截圖目標範圍結束 -->
+
+                <button class="btn" onclick="downloadResultImage()">下載分享圖 (PNG)</button>
                 <button class="btn" style="background: #ccc; margin-top: 10px;" onclick="location.reload()">重新測試</button>
             `;
             
-            // 在頁面渲染完成後，立即生成 QR Code
+            // 1. 生成 QR Code
             generateQRCode();
+            
+            // 2. 繪製雷達圖 (需要延遲，確保 Canvas 元素已加入 DOM)
+            setTimeout(() => {
+                drawRadarChart('radarChartCanvas', normalizedRadarScores);
+            }, 100); 
         }
 
         // 啟動程式

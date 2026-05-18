@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tina Seelig 六大領域風險承受度評估工具</title>
+    <!-- 引入 Chart.js 用於繪製蜘蛛圖 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .intro {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+
+        .dimension-section {
+            margin-bottom: 35px;
+            border-left: 5px solid var(--primary-color);
+            padding-left: 15px;
+        }
+
+        .dimension-title {
+            font-size: 1.25rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .question-card {
+            background: #fbfbfb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #eee;
+        }
+
+        .question-text {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .options-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .option-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .option-label input {
+            margin-bottom: 5px;
+        }
+
+        .scale-text {
+            font-size: 0.8rem;
+            color: #999;
+            font-weight: normal;
+        }
+
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 30px;
+        }
+
+        .btn-submit:hover {
+            background-color: #34495e;
+        }
+
+        #result-section {
+            display: none;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px dashed #ccc;
+        }
+
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 400px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .analysis-box {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f1f2f6;
+            border-radius: 8px;
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .analysis-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 600px) {
+            .options-group {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .option-label {
+                flex: unset;
+                width: 18%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>六大領域風險承受度評估</h1>
+    <p class="intro">本測驗源自史丹佛博士 Tina Seelig 的幸運技能架構。<br>請根據你的真實直覺勾選（1分：極度抗拒/恐懼，5分：完全樂意/享受）。</p>
+    
+    <form id="quiz-form">
+        <!-- 題目將由 JavaScript 自動生成 -->
+        <div id="questions-container"></div>
+        <button type="button" class="btn-submit" onclick="calculateResults()">生成我的風險蜘蛛圖</button>
+    </form>
+
+    <div id="result-section">
+        <h2 style="text-align: center; color: var(--primary-color);">您的風險承受度分析結果</h2>
+        <div class="chart-container">
+            <canvas id="riskChart"></canvas>
+        </div>
+        <div id="analysis-output" class="analysis-box"></div>
+    </div>
+</div>
+
+<script>
+    // 30道題目數據結構
+    const quizData = [
+        {
+            dimension: "生理風險 (Physical)",
+            questions: [
+                "嘗試高空彈跳、滑翔翼或衝浪等具有速度感與高度的極限運動。",
+                "在沒有專業嚮導、只有地圖的情況下，去挑戰一條難度稍高的未知登山步道。",
+                "嘗試從未吃過、外觀奇特或味道強烈的異國在地街頭小吃。",
+                "在安全措施完善的前提下，體驗密室逃脫中的高空攀爬或黑暗幽閉關卡。",
+                "放棄舒適的飯店，選擇到完全沒有網路訊號的深山野營一晚。"
+            ]
+        },
+        {
+            dimension: "情緒風險 (Emotional)",
+            questions: [
+                "面對心儀對象時，主動跨出第一步向對方告白，並承擔被拒絕的可能。",
+                "在親近的朋友或伴侶面前，主動坦承自己內心深處的自卑、脆弱或恐懼。",
+                "當發現一段關係（友誼或戀情）已經不健康且無法修補時，主動提出結束關係。",
+                "在關係中發生衝突時，不冷戰、不討好，而是直接且誠實地表達自己受傷的感受。",
+                "面對別人的讚美或批評時，能夠坦然接受，不急著否定自己或過度自我防衛。"
+            ]
+        },
+        {
+            dimension: "社會風險 (Social)",
+            questions: [
+                "在超過 50 人的大型會議或公開場合上，站上講台發表觀點或進行演講。",
+                "獨自參加一個完全沒有熟人的社交派對或產業聚會，並主動跟陌生人攀談。",
+                "當眾人都在熱烈討論某個主流話題時，主動提出一個完全相反且非主流的個人見解。",
+                "在路上或公共場合遇到需要協助的陌生人，能毫不猶豫地主動上前搭話並提供幫忙。",
+                "在社交場合中，即使出糗或講錯話，也能自嘲一笑置之，不會耿耿於懷。"
+            ]
+        },
+        {
+            dimension: "財務風險 (Financial)",
+            questions: [
+                "為了實踐更想做的事，在還沒有找到下一份工作前，就毅然決然辭掉穩定的現職。",
+                "將自己大筆的積蓄投入高波動的投資市場（如股票、加密貨幣），而非放在安全的定存。",
+                "拒絕拿固定的死薪水，選擇完全依照業績表現拿獎金的業務性質工作。",
+                "拿出一筆會影響現有生活品質的資金，去支持朋友創業，或自己嘗試微型創業。",
+                "在購買高單價物品或做重大財務決策時，願意「先買下再想辦法賺回來」，而非反覆糾結。"
+            ]
+        },
+        {
+            dimension: "智力風險 (Intellectual)",
+            questions: [
+                "在專業領域的會議中，當著所有專家或同事的面，坦然承認「這題我不懂，請教導我」。",
+                "放棄已經駕輕就熟的專業，重新投入一個完全陌生、可能讓你顯得像個白痴的全新學科。",
+                "在腦力激盪會議中，提出一個聽起來極度瘋狂、不切實際，但很有創意的點子。",
+                "閱讀與自己核心價值觀完全相反、甚至會讓你感到強烈不適的書籍或言論。",
+                "挑戰一項全公司或全團隊都沒人做過、沒有任何前例可循的複雜系統或專案。"
+            ]
+        },
+        {
+            dimension: "政治風險 (Political)",
+            questions: [
+                "當高階主管或老闆提出一個顯然有邏輯漏洞的決策時，當眾提出質疑或修正建議。",
+                "在職場上目睹不公不義的事情（如同事被集體排擠或搶功勞）時，主動站出來發聲捍衛。",
+                "為了堅持做對的事，不惜得罪其他部門的主管，甚至面臨被跨部門抵制的風險。",
+                "當團隊意見高度一致，而你持反對意見時，願意承擔「破壞和諧」的標籤，堅持發言。",
+                "主動向公司申請調動到一個派系鬥爭激烈、或是資源分配合理度高度敏感的爭議部門。"
+            ]
+        }
+    ];
+
+    // 動態渲染 HTML 題目
+    const container = document.getElementById('questions-container');
+    let qIndex = 1;
+
+    quizData.forEach((dim, dIdx) => {
+        const section = document.createElement('div');
+        section.className = 'dimension-section';
+        section.innerHTML = `<div class="dimension-title">${dim.dimension}</div>`;
+
+        dim.questions.forEach((qText) => {
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            card.innerHTML = `
+                <div class="question-text">${qIndex}. ${qText}</div>
+                <div class="options-group">
+                    <span class="scale-text">極度抗拒</span>
+                    ${[1, 2, 3, 4, 5].map(num => `
+                        <label class="option-label">
+                            <input type="radio" name="q${qIndex}" value="${num}" required>
+                            ${num}
+                        </label>
+                    `).join('')}
+                    <span class="scale-text">完全樂意</span>
+                </div>
+            `;
+            section.appendChild(card);
+            qIndex++;
+        });
+        container.appendChild(section);
+    });
+
+    let myChart = null;
+
+    // 計算結果與繪圖邏輯
+    function calculateResults() {
+        const scores = [0, 0, 0, 0, 0, 0]; // 儲存六個維度的加總
+        let totalQuestions = 30;
+        let answeredCount = 0;
+
+        for (let i = 1; i <= totalQuestions; i++) {
+            const radios = document.getElementsByName(`q${i}`);
+            let checkedValue = null;
+            for (const radio of radios) {
+                if (radio.checked) {
+                    checkedValue = parseInt(radio.value);
+                    break;
+                }
+            }
+            if (checkedValue !== null) {
+                // 判斷這題屬於哪一個維度 (每5題一個維度)
+                const dimIndex = Math.floor((i - 1) / 5);
+                scores[dimIndex] += checkedValue;
+                answeredCount++;
+            }
+        }
+
+        if (answeredCount < totalQuestions) {
+            alert(`您還有題目尚未填寫！目前已填寫 ${answeredCount} / ${totalQuestions} 題。`);
+            return;
+        }
+
+        // 顯示結果區塊
+        document.getElementById('result-section').style.display = 'block';
+
+        // 渲染或更新 Chart.js 雷達圖
+        const ctx = document.getElementById('riskChart').getContext('2d');
+        const labels = quizData.map(d => d.dimension.split(' ')[0]); // 只取中文標題
+
+        if (myChart) {
+            myChart.destroy(); // 避免重複繪製疊加
+        }
+
+        myChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '我的風險承受度 (滿分25分)',
+                    data: scores,
+                    backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                    borderColor: 'rgba(231, 76, 60, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(44, 62, 80, 1)'
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { display: true },
+                        suggestedMin: 5,
+                        suggestedMax: 25,
+                        ticks: { stepSize: 5 }
+                    }
+                }
+            }
+        });
+
+        // 動態生成客製化總結文本
+        generateSummary(scores, labels);
+        
+        // 自動平滑捲動到結果區
+        document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // 總結邏輯：找出最高與最低項目
+    function generateSummary(scores, labels) {
+        let maxVal = -1;
+        let minVal = 99;
+        let maxIndex = 0;
+        let minIndex = 0;
+
+        scores.forEach((score, index) => {
+            if (score > maxVal) { maxVal = score; maxIndex = index; }
+            if (score < minVal) { minVal = score; minIndex = index; }
+        });
+
+        const output = document.getElementById('analysis-output');
+        output.innerHTML = `
+            <div class="analysis-title">🔍 您的好運體質與風險洞察：</div>
+            <p>您的風險雷達圖已經生成！在滿分 25 分的區間中：</p>
+            <ul>
+                <li><strong>您最強的錨點是【${labels[maxIndex]}】風險（${maxVal}分）：</strong> 這代表你更願意在這個領域進行嘗試。根據 Tina Seelig 的帆船理論，這裡就是你目前最容易捕捉到「好運之風」的開窗位置！</li>
+                <li><strong>您相對最謹慎的是【${labels[minIndex]}】風險（${minVal}分）：</strong> 這代表在此領域你目前的防禦機制較重。這不是壞事，它代表你重視這個領域的純粹性，或者你目前的「社交/安全承擔能力」正在這裡進行高耗能的能量保存。</li>
+            </ul>
+            <p>💡 <strong>主持人給你的思考題：</strong> 如果好運是一門回應的外在技能，你不需要強迫自己每個維度都拿到25分。試著保持你最看重的核心價值（龍骨），然後挑選一個分數在 10~15 分之間的「中度風險領域」，在那裡嘗試做一個微小的改變，攪動那鍋湯，看看會開啟哪扇新大門！</p>
+        `;
+    }
+</script>
+
+</body>
+</html>

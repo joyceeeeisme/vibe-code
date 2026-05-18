@@ -136,7 +136,7 @@
 
         .analysis-box {
             margin-top: 25px;
-            padding: 20px;
+            padding: 24px;
             background: #f1f2f6;
             border-radius: 8px;
             border-left: 5px solid var(--accent-color);
@@ -144,9 +144,40 @@
 
         .analysis-title {
             font-weight: bold;
-            font-size: 1.1rem;
-            margin-bottom: 10px;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
             color: var(--primary-color);
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+        }
+
+        .low-score-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .low-score-tag {
+            background: var(--accent-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .warm-quote {
+            margin-top: 25px;
+            font-style: italic;
+            color: #555;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid #2ecc71;
         }
 
         @media (max-width: 600px) {
@@ -183,10 +214,16 @@
 </div>
 
 <script>
-    // 30道題目數據結構
+    // 30道題目與維度數據結構
     const quizData = [
         {
             dimension: "生理風險 (Physical)",
+            subtext: "我害怕受傷、生病或失去身體的掌控權。",
+            actions: [
+                "改變一條通勤路線：下班時故意提早一站下車，走一條從沒走過的巷子回家。",
+                "點一道沒吃過的菜：去平常最常去的餐廳，閉著眼睛點一個你過去「絕對不碰」的品項（例如：苦瓜、冷門辛香料）。",
+                "微幅調整身體習慣：洗澡最後 10 秒鐘嘗試切換成冷水，體驗身體受到微小刺激的反應。"
+            ],
             questions: [
                 "嘗試高空彈跳、滑翔翼或衝浪等具有速度感與高度的極限運動。",
                 "在沒有專業嚮導、只有地圖的情況下，去挑戰一條難度稍高的未知登山步道。",
@@ -197,6 +234,12 @@
         },
         {
             dimension: "情緒風險 (Emotional)",
+            subtext: "我害怕展現脆弱會被拋棄、被拒絕，或是受傷。",
+            actions: [
+                "練習無痛拒絕：面對同事或朋友無關緊要的小邀約，練習說：「謝謝你，但我今天想留點時間給自己。」",
+                "讚美他人：傳一則訊息給朋友，具體稱讚他最近做的某件小事，不帶任何目的。",
+                "主動講述一件糗事：在吃午餐時，主動跟同事分享自己一件無傷大雅的愚蠢糗事，練習「自嘲」並發現世界其實沒有崩塌。"
+            ],
             questions: [
                 "面對心儀對象時，主動跨出第一步向對方告白，並承擔被拒絕的可能。",
                 "在親近的朋友或伴侶面前，主動坦承自己內心深處的自卑、脆弱或恐懼。",
@@ -207,6 +250,12 @@
         },
         {
             dimension: "社會風險 (Social)",
+            subtext: "我害怕在人群面前出醜、被評判，或者被貼上標籤。",
+            actions: [
+                "與店員微互動：在超商結帳時，看著店員的眼睛，真心說一句「謝謝你，辛苦了」。",
+                "在線上發表一個貼圖：在公司大群組或百人社群裡，不發文字，只在別人發布好消息時按一個「🎉」或「👍」。",
+                "開會時提早發言：在下一次會議中，在開場前 5 分鐘，第一個舉手說：「早安，我想確認一下今天的會議議程。」（講一句話就收工）。"
+            ],
             questions: [
                 "在超過 50 人的大型會議或公開場合上，站上講台發表觀點或進行演講。",
                 "獨自參加一個完全沒有熟人的社交派對或產業聚會，並主動跟陌生人攀談。",
@@ -217,6 +266,12 @@
         },
         {
             dimension: "財務風險 (Financial)",
+            subtext: "金錢帶給我極大的安全感，我很害怕失去對物質的控制。",
+            actions: [
+                "設立一個「無痛虧損帳戶」：每個月拿出一筆就算丟到海裡也不心疼的錢（例如 500 元），去買你完全不懂但好奇的零股，練習看著它漲跌而心跳不加速。",
+                "買一樣「平時捨不得買」的小物：故意去買一盒比平常貴一倍的精品水果，或是好一點的濾掛咖啡，打破「我配不上」的限制。",
+                "嘗試物資流動：把家裡用不到的舊東西，上架拍賣網站便宜賣，體驗「資產流動與價值重估」的感覺。"
+            ],
             questions: [
                 "為了實踐更想做的事，在還沒有找到下一份工作前，就毅然決然辭掉穩定的現職。",
                 "將自己大筆的積蓄投入高波動的投資市場（如股票、加密貨幣），而非放在安全的定存。",
@@ -227,6 +282,12 @@
         },
         {
             dimension: "智力風險 (Intellectual)",
+            subtext: "我習慣在熟悉的領域當專家，我很害怕暴露出自己『不懂、很笨』的樣子。",
+            actions: [
+                "主動說不知道：在對話中只要別人聊到你沒聽過的名詞，立刻說：「這個我沒聽過耶，那是什麼？可以跟我說說嗎？」",
+                "看一本完全相左的書：如果你討厭心靈雞湯，故意去翻一章吸引力法則；如果你支持科學，故意去讀一章玄學，練習「只觀察、不評判」的大腦彈性。",
+                "下載一個全新的領域 App：隨便下載一個你這輩子絕對不會用的奇葩軟體（例如鳥類辨識軟體、天文觀測軟體），摸索玩個 10 分鐘。"
+            ],
             questions: [
                 "在專業領域的會議中，當著所有專家或同事的面，坦然承認「這題我不懂，請教導我」。",
                 "放棄已經駕輕就熟的專業，重新投入一個完全陌生、可能讓你顯得像個白痴的全新學科。",
@@ -237,6 +298,12 @@
         },
         {
             dimension: "政治風險 (Political)",
+            subtext: "我害怕得罪權威、害怕團體的不和諧，更害怕被排擠與孤立。",
+            actions: [
+                "在小事上當和平打破者：同事問「中午吃什麼」當大家都說隨便時，你第一個說：「我想吃那家新開的拉麵店。」練習主導小集體的意志。",
+                "私下提出不同意見：不需要當眾挑戰。開完會後，私下傳訊息給主管：「經理，關於剛才的方案，我想到另一個微調方向，或許可以降低風險，給您參考。」",
+                "練習禮貌的「不附和」：當社交圈在集體八卦或抱怨某人時，選擇保持微笑不參與點頭，拿回你的政治主權。"
+            ],
             questions: [
                 "當高階主管或老闆提出一個顯然有邏輯漏洞的決策時，當眾提出質疑或修正建議。",
                 "在職場上目睹不公不義的事情（如同事被集體排擠或搶功勞）時，主動站出來發聲捍衛。",
@@ -280,9 +347,9 @@
 
     let myChart = null;
 
-    // 計算結果與繪圖邏輯
+    // 計算結果與繪圖
     function calculateResults() {
-        const scores = [0, 0, 0, 0, 0, 0]; // 儲存六個維度的加總
+        const scores = [0, 0, 0, 0, 0, 0];
         let totalQuestions = 30;
         let answeredCount = 0;
 
@@ -296,7 +363,6 @@
                 }
             }
             if (checkedValue !== null) {
-                // 判斷這題屬於哪一個維度 (每5題一個維度)
                 const dimIndex = Math.floor((i - 1) / 5);
                 scores[dimIndex] += checkedValue;
                 answeredCount++;
@@ -308,15 +374,13 @@
             return;
         }
 
-        // 顯示結果區塊
         document.getElementById('result-section').style.display = 'block';
 
-        // 渲染或更新 Chart.js 雷達圖
         const ctx = document.getElementById('riskChart').getContext('2d');
-        const labels = quizData.map(d => d.dimension.split(' ')[0]); // 只取中文標題
+        const labels = quizData.map(d => d.dimension.split(' ')[0]);
 
         if (myChart) {
-            myChart.destroy(); // 避免重複繪製疊加
+            myChart.destroy();
         }
 
         myChart = new Chart(ctx, {
@@ -344,35 +408,67 @@
             }
         });
 
-        // 動態生成客製化總結文本
-        generateSummary(scores, labels);
+        // 執行升級版分析診斷
+        generateDeepAnalysis(scores);
         
-        // 自動平滑捲動到結果區
         document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // 總結邏輯：找出最高與最低項目
-    function generateSummary(scores, labels) {
-        let maxVal = -1;
-        let minVal = 99;
-        let maxIndex = 0;
-        let minIndex = 0;
-
-        scores.forEach((score, index) => {
-            if (score > maxVal) { maxVal = score; maxIndex = index; }
-            if (score < minVal) { minVal = score; minIndex = index; }
+    // 核心優化邏輯：抓出最低分的兩項進行深度心理拆解
+    function generateDeepAnalysis(scores) {
+        // 建立包含索引與分數的物件陣列
+        let indexedScores = scores.map((score, index) => {
+            return { index: index, score: score, data: quizData[index] };
         });
 
+        // 依分數由低到高排序
+        indexedScores.sort((a, b) => a.score - b.score);
+
+        // 取出最低分的兩項
+        const lowest1 = indexedScores[0];
+        const lowest2 = indexedScores[1];
+
         const output = document.getElementById('analysis-output');
-        output.innerHTML = `
-            <div class="analysis-title">🔍 您的好運體質與風險洞察：</div>
-            <p>您的風險雷達圖已經生成！在滿分 25 分的區間中：</p>
-            <ul>
-                <li><strong>您最強的錨點是【${labels[maxIndex]}】風險（${maxVal}分）：</strong> 這代表你更願意在這個領域進行嘗試。根據 Tina Seelig 的帆船理論，這裡就是你目前最容易捕捉到「好運之風」的開窗位置！</li>
-                <li><strong>您相對最謹慎的是【${labels[minIndex]}】風險（${minVal}分）：</strong> 這代表在此領域你目前的防禦機制較重。這不是壞事，它代表你重視這個領域的純粹性，或者你目前的「社交/安全承擔能力」正在這裡進行高耗能的能量保存。</li>
-            </ul>
-            <p>💡 <strong>主持人給你的思考題：</strong> 如果好運是一門回應的外在技能，你不需要強迫自己每個維度都拿到25分。試著保持你最看重的核心價值（龍骨），然後挑選一個分數在 10~15 分之間的「中度風險領域」，在那裡嘗試做一個微小的改變，攪動那鍋湯，看看會開啟哪扇新大門！</p>
+        
+        let htmlContent = `
+            <div class="analysis-title">🔍 您的好運體質與防禦重區深度洞察</div>
+            <p>您的風險雷達圖已經生成。在 Tina Seelig 的幸運架構中，低分並不代表缺點，它往往是你為了保護自己而建立的城堡。但這也意味著，機會之風目前很難從這裡吹進來。</p>
+            <p>系統自動診斷出您目前<strong>防禦機制最重、分數最低的兩個維度</strong>，請直面內心的真實狀態：</p>
         `;
+
+        // 渲染最低分第一名
+        htmlContent += `
+            <div class="low-score-card">
+                <span class="low-score-tag">防禦重區第一名：${lowest1.data.dimension} （${lowest1.score}分）</span>
+                <p><strong>🧠 內心底層的心理潛台詞：</strong><br><span style="color: var(--accent-color); font-weight:500;">「${lowest1.data.subtext}」</span></p>
+                <p><strong>💡 攪動能量的小步調整行動（三選一）：</strong></p>
+                <ul>
+                    ${lowest1.data.actions.map(act => `<li>${act}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+
+        // 渲染最低分第二名
+        htmlContent += `
+            <div class="low-score-card">
+                <span class="low-score-tag" style="background-color: #f39c12;">防禦重區第二名：${lowest2.data.dimension} （${lowest2.score}分）</span>
+                <p><strong>🧠 內心底層的心理潛台詞：</strong><br><span style="color: #f39c12; font-weight:500;">「${lowest2.data.subtext}」</span></p>
+                <p><strong>💡 攪動能量的小步調整行動（三選一）：</strong></p>
+                <ul>
+                    ${lowest2.data.actions.map(act => `<li>${act}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+
+        // 結尾溫暖語錄
+        htmlContent += `
+            <div class="warm-quote">
+                <strong>💡 主持人送給你的話：</strong><br>
+                「低分只是你過去高耗能保存能量的保護殼。你不需要強迫自己一夜之間變得無所畏懼，更不需要把整座城堡炸掉。我們只需要輕輕地，把上面其中一個最無痛的小行動放進明天的生活裡，把窗戶推開五公分，去攪動這鍋湯。好運技能，就是從這群微小的回應選擇中，開始產生複利的。」
+            </div>
+        `;
+
+        output.innerHTML = htmlContent;
     }
 </script>
 
